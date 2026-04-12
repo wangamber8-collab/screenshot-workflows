@@ -6,6 +6,20 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    restart: unless-stopped
+  
+  model-loader:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    entrypoint: >
+        sh -c "until ollama list; do echo 'waiting for ollama...'; sleep 2; done && ollama pull qwen3-vl:4b && ollama pull nomic-embed-text"
+      
+    restart: "no"
 
 volumes:
   ollama_data:
