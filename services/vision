@@ -1,5 +1,6 @@
 from db.client import supabase
 import requests
+import base64
 
 response = supabase.table("screenshots").select("*").eq("status", "pending").execute()
 images = response.data
@@ -12,10 +13,40 @@ def get_response(image_data : str) -> str:
         response = requests.post(f"{os.getenv('OLLAMA_URL')}/api/generate", json={
             "model": "qwen3-vl:4b",
             "prompt": prompt,
-            "image" : [image_data],
+            "images" : [image_data],
             "stream": False
         })
         return response.json().get("response", "")
     except Exception as e:
         print(f"Error: {e}")
         return ""
+
+def convert_base64(image_url) :
+    #image_url: image url
+    #returns the base64 image
+    response = requests.get(image_url)
+    return base64.b64encode(response.content).decode("utf-8")
+
+def process_screenshots(images) :
+    #images are the rows of unprocessed images
+    #fetches a description and updates the database
+    for image in images :
+        try:
+            converted = convert_base64(image["image_url"])
+        except Exception as e:
+            print("Error converting image")
+            supabase.table("screenshots").update({"status" : "failed"}).eq("id", image["id"]).execute()
+            continue
+        
+        description = get_response(converted)
+
+        if description:
+            supabase.table("screenshots").update({
+                "image_data" : converted,
+                "description": description,
+                "status": "vision_done"
+            }).eq("id", image["id"]).execute()
+        else :
+            supabase.table("screenshots").update({"status" : "failed"}).eq("id", image["id"]).execute()
+
+
