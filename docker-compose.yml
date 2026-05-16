@@ -16,10 +16,21 @@ services:
       - OLLAMA_HOST=http://ollama:11434
     volumes:
       - ollama_data:/root/.ollama
-    entrypoint: >
-        sh -c "until ollama list; do echo 'waiting for ollama...'; sleep 2; done && ollama pull qwen3-vl:4b && ollama pull nomic-embed-text"
+    entrypoint: sh -c "until ollama list > /dev/null 2>&1; do echo 'waiting for ollama...'; sleep 2; done && ollama pull qwen3-vl:4b && ollama pull nomic-embed-text"
       
     restart: "no"
-
+  
+  vision:
+    build:
+      context: .
+      dockerfile: docker/vision.Dockerfile
+    depends_on:
+      model-loader:
+        condition: service_completed_successfully
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - DB_URL=${DB_URL}
+      - DB_SERVICE_KEY=${DB_SERVICE_KEY}
+    restart: "no"
 volumes:
   ollama_data:

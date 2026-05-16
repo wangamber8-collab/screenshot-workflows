@@ -1,9 +1,12 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from db.client import supabase
 import requests
 import base64
+from dotenv import load_dotenv
 
-response = supabase.table("screenshots").select("*").eq("status", "pending").execute()
-images = response.data
+load_dotenv()
 
 def get_response(image_data : str) -> str:
     #image_data: base-64 encoded string of the image
@@ -16,6 +19,7 @@ def get_response(image_data : str) -> str:
             "images" : [image_data],
             "stream": False
         })
+        print(f"Raw response: {response.json()}")
         return response.json().get("response", "")
     except Exception as e:
         print(f"Error: {e}")
@@ -27,9 +31,10 @@ def convert_base64(image_url) :
     response = requests.get(image_url)
     return base64.b64encode(response.content).decode("utf-8")
 
-def process_screenshots(images) :
-    #images are the rows of unprocessed images
-    #fetches a description and updates the database
+def process_screenshots() :
+    #fetches unprocessed screenshots, gets their description, and updates the database
+    response = supabase.table("screenshots").select("*").eq("status", "pending").execute()
+    images = response.data
     for image in images :
         try:
             converted = convert_base64(image["image_url"])
@@ -48,5 +53,8 @@ def process_screenshots(images) :
             }).eq("id", image["id"]).execute()
         else :
             supabase.table("screenshots").update({"status" : "failed"}).eq("id", image["id"]).execute()
+
+if __name__ == "__main__":
+    process_screenshots()
 
 
