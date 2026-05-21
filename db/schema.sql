@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TYPE image_status AS ENUM ('pending', 'vision_done', 'embedding_done', 'grouping_done', 'failed' )
+CREATE TYPE image_status AS ENUM ('pending', 'vision_done', 'embedding_done', 'grouping_done', 'failed' );
 
 CREATE TABLE IF NOT EXISTS workflow_sets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
