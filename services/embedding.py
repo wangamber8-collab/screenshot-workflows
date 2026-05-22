@@ -21,7 +21,8 @@ def get_embeddings() :
 
             if embedding:
                 supabase.table("screenshots").update({
-                    "embedding": embedding
+                    "embedding": embedding,
+                    "status" : "embedding_done"
                 }).eq("id", image["id"]).execute()
             else :
                 supabase.table("screenshots").update({"status" : "failed"}).eq("id", image["id"]).execute()
