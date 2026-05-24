@@ -7,7 +7,7 @@ import requests
 
 load_dotenv()
 
-def get_embeddings() :
+def set_embeddings() :
     #fetches vision_done screenshots, gets their embeddings, and updates the database
     response = supabase.table("screenshots").select("*").eq("status", "vision_done").execute()
     images = response.data
@@ -30,4 +30,5 @@ def get_embeddings() :
             print(f"Error getting embedding: {e}")
             supabase.table("screenshots").update({"status" : "failed"}).eq("id", image["id"]).execute()
 
-            
+if __name__ == "__main__":
+    set_embeddings()           
