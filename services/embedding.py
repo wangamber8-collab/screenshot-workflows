@@ -2,10 +2,8 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from db.client import supabase
-from dotenv import load_dotenv
 import requests
 
-load_dotenv()
 
 def set_embeddings() :
     #fetches vision_done screenshots, gets their embeddings, and updates the database

@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS workflow_sets (
 CREATE TABLE IF NOT EXISTS screenshots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     image_url TEXT NOT NULL,
-    image_data TEXT,
     description TEXT,
     embedding VECTOR(768),
     workflow_set_id UUID REFERENCES workflow_sets(id),
