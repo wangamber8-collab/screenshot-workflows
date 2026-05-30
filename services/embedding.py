@@ -13,9 +13,9 @@ def set_embeddings() :
         try:
             model_response = requests.post(f"{os.getenv('OLLAMA_URL')}/api/embeddings", json={
                 "model": "nomic-embed-text:latest",
-                "input": image["description"]
+                "prompt": image["description"]
             })
-            embedding = model_response.json().get("embeddings", [])[0]
+            embedding = model_response.json().get("embedding", [])
 
             if embedding:
                 supabase.table("screenshots").update({
