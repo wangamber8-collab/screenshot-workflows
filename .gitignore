@@ -1,3 +1,4 @@
 .env
 ollama_data/
 venv/
+**/__pycache__/
