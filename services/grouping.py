@@ -89,4 +89,7 @@ def set_groups() :
                 "status": "grouping_done"
             }).eq("id", rows[i]["id"]).execute()
 
+if __name__ == "__main__":
+    set_groups()
+
 
