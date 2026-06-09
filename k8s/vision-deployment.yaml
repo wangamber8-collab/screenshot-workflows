@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vision-deployment
+spec:
+  selector:
+    matchLabels:
+      app: vision
+  template:
+    metadata:
+      labels:
+        app: vision
+    spec:
+      containers:
+        - name: vision-container
+          image: vision-service:latest
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: OLLAMA_URL
+              value: "http://ollama:11434"
