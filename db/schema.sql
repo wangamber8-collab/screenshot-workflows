@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS workflow_sets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     label TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
-    screenshot_count INTEGER DEFAULT 1
+    screenshot_count INTEGER DEFAULT 1,
+    user_id TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS screenshots (
@@ -16,7 +17,8 @@ CREATE TABLE IF NOT EXISTS screenshots (
     embedding VECTOR(768),
     workflow_set_id UUID REFERENCES workflow_sets(id),
     processed_at TIMESTAMP DEFAULT NOW(),
-    status image_status DEFAULT 'pending'
+    status image_status DEFAULT 'pending',
+    user_id TEXT NOT NULL
 );
 
 ALTER TABLE workflow_sets ENABLE ROW LEVEL SECURITY;

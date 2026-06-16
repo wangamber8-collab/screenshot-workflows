@@ -9,7 +9,7 @@ import json
 
 def get_embeddings() :
     #fetches vision_done screenshots, gets their embeddings
-    response = supabase.table("screenshots").select("id, embedding, description").eq("status", "embedding_done").order("processed_at", desc = False).execute()
+    response = supabase.table("screenshots").select("id, embedding, description, user_id").eq("status", "embedding_done").order("processed_at", desc = False).execute()
     return response.data
 
 def get_label(description):
@@ -35,59 +35,62 @@ def set_groups() :
     if len(rows) == 0:
         return
 
-    #set first group
-    first = rows[0]
-    group_label = get_label(first["description"])
+    users = {}
+    for row in rows:
+        users.setdefault(row["user_id"], []).append(row)
 
     threshold = 0.75
     
-    #set first group
-    first = rows[0]
-    group_label = get_label(first["description"])
+    for user_id, user_rows in user.items():
+        #set first group
+        first = user_rows[0]
+        group_label = get_label(first["description"])
 
-    result = supabase.table("workflow_sets").insert({
-        "label": group_label
-    }).execute()
+        result = supabase.table("workflow_sets").insert({
+            "label": group_label,
+            "user_id": user_id
+        }).execute()
 
-    most_recent_id = result.data[0]["id"]
-    curr_group_count = 1
+        most_recent_id = result.data[0]["id"]
+        curr_group_count = 1
 
-    supabase.table("screenshots").update({
-        "workflow_set_id": most_recent_id,
-        "status": "grouping_done"
-    }).eq("id", first["id"]).execute()
+        supabase.table("screenshots").update({
+            "workflow_set_id": most_recent_id,
+            "status": "grouping_done"
+        }).eq("id", first["id"]).execute()
 
-    for i in range(1, len(rows)) :
-        x = rows[i-1]["embedding"]
-        y = rows[i]["embedding"]
-        similarity = cosine_similarity([json.loads(x)], [json.loads(y)])[0][0]
+        for i in range(1, len(user_rows)) :
+            x = user_rows[i-1]["embedding"]
+            y = user_rows[i]["embedding"]
+            similarity = cosine_similarity([json.loads(x)], [json.loads(y)])[0][0]
 
-        if similarity > threshold :
-            #same group
-            curr_group_count += 1
-            supabase.table("screenshots").update({
-                "workflow_set_id": most_recent_id,
-                "status": "grouping_done"
-            }).eq("id", rows[i]["id"]).execute()
+            if similarity > threshold :
+                #same group
+                curr_group_count += 1
+                supabase.table("screenshots").update({
+                    "workflow_set_id": most_recent_id,
+                    "status": "grouping_done"
+                }).eq("id", user_rows[i]["id"]).execute()
 
-            supabase.table("workflow_sets").update({
-                "screenshot_count": curr_group_count
-            }).eq("id", most_recent_id).execute()
-        else :
-            #new group
-            new_label = get_label(rows[i]["description"])
+                supabase.table("workflow_sets").update({
+                    "screenshot_count": curr_group_count
+                }).eq("id", most_recent_id).execute()
+            else :
+                #new group
+                new_label = get_label(user_rows[i]["description"])
 
-            result = supabase.table("workflow_sets").insert({
-                "label": new_label
-            }).execute()
+                result = supabase.table("workflow_sets").insert({
+                    "label": new_label,
+                    "user_id": user_id
+                }).execute()
 
-            most_recent_id = result.data[0]["id"]
-            curr_group_count = 1
+                most_recent_id = result.data[0]["id"]
+                curr_group_count = 1
 
-            supabase.table("screenshots").update({
-                "workflow_set_id": most_recent_id,
-                "status": "grouping_done"
-            }).eq("id", rows[i]["id"]).execute()
+                supabase.table("screenshots").update({
+                    "workflow_set_id": most_recent_id,
+                    "status": "grouping_done"
+                }).eq("id", user_rows[i]["id"]).execute()
 
 if __name__ == "__main__":
     set_groups()

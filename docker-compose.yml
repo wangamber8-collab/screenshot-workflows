@@ -19,7 +19,7 @@ services:
     entrypoint: sh -c "until ollama list > /dev/null 2>&1; do echo 'waiting for ollama...'; sleep 2; done && ollama pull qwen3-vl:4b && ollama pull nomic-embed-text"
       
     restart: "no"
-  
+    
   vision:
     build:
       context: .
