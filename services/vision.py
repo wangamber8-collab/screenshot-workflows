@@ -4,6 +4,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from db.client import supabase
 import requests
 import base64
+from services.celery_app import app
+from services.embedding.tasks import set_embedding
 
 
 def get_response(image_data : str) -> str:
@@ -30,29 +32,40 @@ def convert_base64(image_url) :
     with requests.get(image_url) as response:
         return base64.b64encode(response.content).decode("utf-8")
 
-def process_screenshots() :
-    #fetches unprocessed screenshots, gets their description, and updates the database
-    response = supabase.table("screenshots").select("*").eq("status", "pending").execute()
-    images = response.data
-    for image in images :
-        try:
-            converted = convert_base64(image["image_url"])
-        except Exception as e:
-            print("Error converting image")
-            supabase.table("screenshots").update({"status" : "failed"}).eq("id", image["id"]).execute()
-            continue
+@app.task(name="vision.process")
+def process_screenshot(screenshot_id) :
+    #fetches unprocessed screenshot, gets the description, and updates the database
+    response = (
+        supabase.table("screenshots")
+        .select("image_url")
+        .eq("id", screenshot_id)
+        .eq("status", "pending")
+        .execute()
+    )
+
+    if not response.data:
+        print(f"No screenshot found with ID {screenshot_id} or screenshot shouldn't be on queue")
+        return
+
+    images = response.data[0]
+
+    try:
+        converted = convert_base64(image["image_url"])
+    except Exception as e:
+        print("Error converting image")
+        supabase.table("screenshots").update({"status" : "failed"}).eq("id", screenshot_id).execute()
+        return
         
-        description = get_response(converted)
+    description = get_response(converted)
 
-        if description:
-            supabase.table("screenshots").update({
-                "description": description,
-                "status": "vision_done"
-            }).eq("id", image["id"]).execute()
-        else :
-            supabase.table("screenshots").update({"status" : "failed"}).eq("id", image["id"]).execute()
+    if description:
+        supabase.table("screenshots").update({
+            "description": description,
+            "status": "vision_done"
+        }).eq("id", screenshot_id).execute()
 
-if __name__ == "__main__":
-    process_screenshots()
+        set_embedding.delay(screenshot_id)
+    else :
+        supabase.table("screenshots").update({"status" : "failed"}).eq("id", screenshot_id).execute()
 
 
