@@ -41,10 +41,11 @@ def set_groups() :
 
     threshold = 0.75
     
-    for user_id, user_rows in user.items():
+    for user_id, user_rows in users.items():
         #set first group
         first = user_rows[0]
         group_label = get_label(first["description"])
+        print(group_label)
 
         result = supabase.table("workflow_sets").insert({
             "label": group_label,
@@ -78,6 +79,7 @@ def set_groups() :
             else :
                 #new group
                 new_label = get_label(user_rows[i]["description"])
+                print(new_label)
 
                 result = supabase.table("workflow_sets").insert({
                     "label": new_label,

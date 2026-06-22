@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS screenshots (
     image_url TEXT NOT NULL,
     description TEXT,
     embedding VECTOR(768),
-    workflow_set_id UUID REFERENCES workflow_sets(id),
+    workflow_set_id UUID,
     processed_at TIMESTAMP DEFAULT NOW(),
     status image_status DEFAULT 'pending',
     user_id TEXT NOT NULL
