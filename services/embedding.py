@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from db.client import supabase
 import requests
 from services.celery_app import app
+from services.grouping.tasks import set_group
 
 @app.task(name="embedding.process")
 def set_embedding(screenshot_id) :
@@ -32,6 +33,8 @@ def set_embedding(screenshot_id) :
                 "embedding": embedding,
                 "status" : "embedding_done"
             }).eq("id", screenshot_id).execute()
+
+            set_group.delay(screenshot_id)
         else :
             supabase.table("screenshots").update({"status" : "failed"}).eq("id", screenshot_id).execute()
     except Exception as e:

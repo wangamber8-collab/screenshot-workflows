@@ -17,4 +17,5 @@ app.conf.update(
 app.conf.task_routes = {
     'vision.process': {'queue': 'vision'},
     'embedding.process': {'queue': 'embedding'},
+    'grouping.process' : {'queue': 'grouping'},
 }

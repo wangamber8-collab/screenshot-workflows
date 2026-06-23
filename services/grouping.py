@@ -5,12 +5,7 @@ from db.client import supabase
 import requests
 import json
 import numpy as np
-
-
-def get_embeddings():
-    #fetches vision_done screenshots, gets their embeddings
-    response = supabase.table("screenshots").select("id, embedding, description, user_id").eq("status", "embedding_done").execute()
-    return response.data
+from services.celery_app import app
 
 def get_label(description):
     #description: screenshot description
@@ -36,51 +31,44 @@ def get_centroid(v1, v2, n):
     centroid = np.array(json.loads(v2), dtype=np.float32)
     return (centroid * n + embedding)/(n + 1)
 
-
-def set_groups() :
-    rows = get_embeddings()
+@app.task(name="grouping.process")
+def set_group(screenshot_id) :
+    #finds the right workflow group for screenshot or creates a new one
+    row = supabase.table("screenshots").select("embedding, description, user_id").eq("id", screenshot_id).execute().data[0]
     threshold = 0.8
 
-    if len(rows) == 0:
-        return
+    result = supabase.rpc(
+        "match_cluster", 
+        {"new_embedding": row["embedding"], "match_user_id": row["user_id"], "threshold" : threshold}
+    ).execute()
 
-    for row in rows:
-        result = supabase.rpc(
-            "match_cluster", 
-            {"new_embedding": row["embedding"], "match_user_id": row["user_id"], "threshold" : threshold}
-        ).execute()
+    if not result.data:
+        #new group
+        label = get_label(row["description"])
 
-        if not result.data:
-            #new group
-            label = get_label(row["description"])
+        new_row = supabase.table("workflow_sets").insert({
+            "label": label,
+            "user_id": row["user_id"],
+            "centroid": row["embedding"]
+        }).execute()
 
-            new_row = supabase.table("workflow_sets").insert({
-                "label": label,
-                "user_id": row["user_id"],
-                "centroid": row["embedding"]
-            }).execute()
+        supabase.table("screenshots").update({
+            "workflow_set_id": new_row.data[0]["id"],
+            "status": "grouping_done"
+        }).eq("id", screenshot_id).execute()
+    else:
+        #add to existing group
+        group = result.data[0]
+        screenshots_count = group["screenshot_count"]
+        centroid = get_centroid(row["embedding"], group["centroid"], screenshots_count)
 
-            supabase.table("screenshots").update({
-                "workflow_set_id": new_row.data[0]["id"],
-                "status": "grouping_done"
-            }).eq("id", row["id"]).execute()
-        else:
-            #add to existing group
-            group = result.data[0]
-            screenshots_count = group["screenshot_count"]
-            centroid = get_centroid(row["embedding"], group["centroid"], screenshots_count)
+        new_row = supabase.table("workflow_sets").update({
+            "screenshot_count": screenshots_count + 1,
+            "centroid": centroid.tolist()
+        }).eq("id", group["id"]).execute()
 
-            new_row = supabase.table("workflow_sets").update({
-                "screenshot_count": screenshots_count + 1,
-                "centroid": centroid.tolist()
-            }).eq("id", group["id"]).execute()
-
-            supabase.table("screenshots").update({
-                "workflow_set_id": new_row.data[0]["id"],
-                "status": "grouping_done"
-            }).eq("id", row["id"]).execute()           
-
-if __name__ == "__main__":
-    set_groups()
-
+        supabase.table("screenshots").update({
+            "workflow_set_id": group["id"],
+            "status": "grouping_done"
+        }).eq("id", screenshot_id).execute()           
 
