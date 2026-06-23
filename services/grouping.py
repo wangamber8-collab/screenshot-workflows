@@ -3,13 +3,13 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from db.client import supabase
 import requests
-from sklearn.metrics.pairwise import cosine_similarity
 import json
+import numpy as np
 
 
-def get_embeddings() :
+def get_embeddings():
     #fetches vision_done screenshots, gets their embeddings
-    response = supabase.table("screenshots").select("id, embedding, description, user_id").eq("status", "embedding_done").order("processed_at", desc = False).execute()
+    response = supabase.table("screenshots").select("id, embedding, description, user_id").eq("status", "embedding_done").execute()
     return response.data
 
 def get_label(description):
@@ -27,72 +27,58 @@ def get_label(description):
         print(f"Error generating label: {e}")
         return ""
 
-def set_groups() :
-    #Sets groups for screenshots based on embedding similarity and updates the database.
-    rows = get_embeddings()
+def get_centroid(v1, v2, n):
+    #v1: new embedding that is being added to the cluster
+    #v2: current centroid of cluster
+    #n: number of items in cluster
+    #Calculates the new centroid for cluster
+    embedding = np.array(json.loads(v1), dtype=np.float32)
+    centroid = np.array(json.loads(v2), dtype=np.float32)
+    return (centroid * n + embedding)/(n + 1)
 
-    #ensure there are at least 1 row to compare
+
+def set_groups() :
+    rows = get_embeddings()
+    threshold = 0.8
+
     if len(rows) == 0:
         return
 
-    users = {}
     for row in rows:
-        users.setdefault(row["user_id"], []).append(row)
+        result = supabase.rpc(
+            "match_cluster", 
+            {"new_embedding": row["embedding"], "match_user_id": row["user_id"], "threshold" : threshold}
+        ).execute()
 
-    threshold = 0.75
-    
-    for user_id, user_rows in users.items():
-        #set first group
-        first = user_rows[0]
-        group_label = get_label(first["description"])
-        print(group_label)
+        if not result.data:
+            #new group
+            label = get_label(row["description"])
 
-        result = supabase.table("workflow_sets").insert({
-            "label": group_label,
-            "user_id": user_id
-        }).execute()
+            new_row = supabase.table("workflow_sets").insert({
+                "label": label,
+                "user_id": row["user_id"],
+                "centroid": row["embedding"]
+            }).execute()
 
-        most_recent_id = result.data[0]["id"]
-        curr_group_count = 1
+            supabase.table("screenshots").update({
+                "workflow_set_id": new_row.data[0]["id"],
+                "status": "grouping_done"
+            }).eq("id", row["id"]).execute()
+        else:
+            #add to existing group
+            group = result.data[0]
+            screenshots_count = group["screenshot_count"]
+            centroid = get_centroid(row["embedding"], group["centroid"], screenshots_count)
 
-        supabase.table("screenshots").update({
-            "workflow_set_id": most_recent_id,
-            "status": "grouping_done"
-        }).eq("id", first["id"]).execute()
+            new_row = supabase.table("workflow_sets").update({
+                "screenshot_count": screenshots_count + 1,
+                "centroid": centroid.tolist()
+            }).eq("id", group["id"]).execute()
 
-        for i in range(1, len(user_rows)) :
-            x = user_rows[i-1]["embedding"]
-            y = user_rows[i]["embedding"]
-            similarity = cosine_similarity([json.loads(x)], [json.loads(y)])[0][0]
-
-            if similarity > threshold :
-                #same group
-                curr_group_count += 1
-                supabase.table("screenshots").update({
-                    "workflow_set_id": most_recent_id,
-                    "status": "grouping_done"
-                }).eq("id", user_rows[i]["id"]).execute()
-
-                supabase.table("workflow_sets").update({
-                    "screenshot_count": curr_group_count
-                }).eq("id", most_recent_id).execute()
-            else :
-                #new group
-                new_label = get_label(user_rows[i]["description"])
-                print(new_label)
-
-                result = supabase.table("workflow_sets").insert({
-                    "label": new_label,
-                    "user_id": user_id
-                }).execute()
-
-                most_recent_id = result.data[0]["id"]
-                curr_group_count = 1
-
-                supabase.table("screenshots").update({
-                    "workflow_set_id": most_recent_id,
-                    "status": "grouping_done"
-                }).eq("id", user_rows[i]["id"]).execute()
+            supabase.table("screenshots").update({
+                "workflow_set_id": new_row.data[0]["id"],
+                "status": "grouping_done"
+            }).eq("id", row["id"]).execute()           
 
 if __name__ == "__main__":
     set_groups()

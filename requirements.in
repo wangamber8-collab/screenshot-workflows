@@ -1,6 +1,6 @@
 supabase
 requests
 python-dotenv
-scikit-learn
+numpy
 celery[redis]==5.6.3
 redis==6.4.0 
