@@ -1,4 +1,10 @@
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -19,6 +25,18 @@ services:
     entrypoint: sh -c "until ollama list > /dev/null 2>&1; do echo 'waiting for ollama...'; sleep 2; done && ollama pull qwen3-vl:4b && ollama pull nomic-embed-text"
       
     restart: "no"
+  
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
     
   vision:
     build:
@@ -27,36 +45,42 @@ services:
     depends_on:
       model-loader:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
     env_file:
       - .env
     environment:
       - OLLAMA_URL=http://ollama:11434
-    restart: "no"
+    restart: unless-stopped
   
   embedding:
     build:
       context: .
       dockerfile: docker/embedding.Dockerfile
     depends_on:
-      vision:
+      model-loader:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
     env_file:
       - .env
     environment:
       - OLLAMA_URL=http://ollama:11434
-    restart: "no"
+    restart: unless-stopped
 
   grouping:
     build:
       context: .
       dockerfile: docker/grouping.Dockerfile
     depends_on:
-      embedding:
+      model-loader:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
     env_file:
       - .env
     environment:
       - OLLAMA_URL=http://ollama:11434
-    restart: "no"
+    restart: unless-stopped
 volumes:
   ollama_data:

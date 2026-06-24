@@ -36,14 +36,30 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({error: 'signing failed'}), {status: 400})
   }
 
-  const {error : insertError} = await supabase
+  const {data : row, error : insertError} = await supabase
     .from('screenshots')
     .insert({ image_url: signed.signedUrl, user_id: inputRow.user_id})
+    .select()
+    .single()
   
   if(insertError) {
     return new Response(JSON.stringify({error : insertError.message}), {status : 400})
   }
 
+  const res = await fetch("http://host.docker.internal:8000/enqueue/vision", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-webhook-secret": Deno.env.get("WEBHOOK_SECRET")!,
+    },
+    body: JSON.stringify({ screenshot_id: row.id})
+  });
+
+  if(!res.ok) {
+    const error = await res.json()
+    return new Response(JSON.stringify(error), {status : res.status})
+  }
+
   return new Response(JSON.stringify({success : true}), {status : 200})
 
-})
+});

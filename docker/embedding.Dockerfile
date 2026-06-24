@@ -5,7 +5,8 @@ WORKDIR /app
 COPY services/embedding.py .
 COPY db/ ./db/
 COPY requirements.txt .
+COPY services/celery_app.py .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "embedding.py"]
+CMD ["celery", "-A", "celery_app", "worker", "--queues", "vision", "--loglevel", "info"]
