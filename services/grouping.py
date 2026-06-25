@@ -45,6 +45,10 @@ def set_group(screenshot_id) :
     if not result.data:
         #new group
         label = get_label(row["description"])
+        
+        if not label:
+            supabase.table("screenshots").update({"status": "failed"}).eq("id", screenshot_id).execute()
+            return
 
         new_row = supabase.table("workflow_sets").insert({
             "label": label,
