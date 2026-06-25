@@ -5,3 +5,5 @@ numpy
 celery[redis]==5.6.3
 redis==6.4.0 
 fastapi
+uvicorn
+pydantic

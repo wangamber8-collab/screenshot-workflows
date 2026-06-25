@@ -36,6 +36,7 @@ click==8.4.1
     #   click-plugins
     #   click-repl
     #   pyiceberg
+    #   uvicorn
 click-didyoumean==0.3.1
     # via celery
 click-plugins==1.1.1.2
@@ -53,7 +54,9 @@ fastapi==0.138.0
 fsspec==2026.4.0
     # via pyiceberg
 h11==0.16.0
-    # via httpcore
+    # via
+    #   httpcore
+    #   uvicorn
 h2==4.3.0
     # via httpx
 hpack==4.1.0
@@ -101,6 +104,7 @@ pycparser==3.0
     # via cffi
 pydantic==2.13.4
     # via
+    #   -r requirements.in
     #   fastapi
     #   postgrest
     #   pyiceberg
@@ -174,6 +178,8 @@ tzlocal==5.4.3
     # via celery
 urllib3==2.7.0
     # via requests
+uvicorn==0.49.0
+    # via -r requirements.in
 vine==5.1.0
     # via
     #   amqp

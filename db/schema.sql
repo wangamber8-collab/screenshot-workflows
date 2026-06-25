@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS workflow_sets (
     label TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     screenshot_count INTEGER DEFAULT 1,
-    user_id TEXT NOT NULL
+    user_id TEXT NOT NULL,
+    centroid VECTOR(768)
 );
 
 CREATE TABLE IF NOT EXISTS screenshots (
@@ -20,6 +21,8 @@ CREATE TABLE IF NOT EXISTS screenshots (
     status image_status DEFAULT 'pending',
     user_id TEXT NOT NULL
 );
+
+CREATE INDEX ON workflow_sets USING hnsw (centroid vector_cosine_ops);
 
 ALTER TABLE workflow_sets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE screenshots ENABLE ROW LEVEL SECURITY;

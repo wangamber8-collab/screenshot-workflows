@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from db.client import supabase
 import requests
 from services.celery_app import app
-from services.grouping.tasks import set_group
+from services.grouping import set_group
 
 @app.task(name="embedding.process")
 def set_embedding(screenshot_id) :

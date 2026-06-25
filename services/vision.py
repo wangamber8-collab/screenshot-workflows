@@ -5,7 +5,7 @@ from db.client import supabase
 import requests
 import base64
 from services.celery_app import app
-from services.embedding.tasks import set_embedding
+from services.embedding import set_embedding
 
 
 def get_response(image_data : str) -> str:
@@ -47,7 +47,7 @@ def process_screenshot(screenshot_id) :
         print(f"No screenshot found with ID {screenshot_id} or screenshot shouldn't be on queue")
         return
 
-    images = response.data[0]
+    image = response.data[0]
 
     try:
         converted = convert_base64(image["image_url"])
