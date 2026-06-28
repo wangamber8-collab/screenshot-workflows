@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: ollama-deployment
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: ollama
@@ -14,6 +15,8 @@ spec:
       containers:
         - name: ollama-container
           image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
           resources:
             requests:
               memory: "4Gi"
