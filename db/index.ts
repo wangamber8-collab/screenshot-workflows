@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
   const {data : row, error : insertError} = await supabase
     .from('screenshots')
-    .insert({ image_url: signed.signedUrl, user_id: inputRow.user_id})
+    .insert({ image_url: signed.signedUrl, user_id: inputRow.user_id, storage_path: name})
     .select()
     .single()
   
