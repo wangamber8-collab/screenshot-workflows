@@ -15,6 +15,7 @@ spec:
         - name: vision-container
           image: vision-service:latest
           imagePullPolicy: IfNotPresent
+          command: ["celery", "-A", "services.celery_app", "worker", "--queues", "vision", "--loglevel", "info", "--concurrency", "1"]
           resources:
             requests:
               memory: "512Mi"

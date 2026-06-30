@@ -15,6 +15,7 @@ spec:
         - name: grouping-container
           image: grouping-service:latest
           imagePullPolicy: IfNotPresent
+          command: ["celery", "-A", "services.celery_app", "worker", "--queues", "grouping", "--loglevel", "info", "--concurrency", "1"]
           resources:
             requests:
               memory: "512Mi"

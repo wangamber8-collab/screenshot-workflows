@@ -1,16 +1,16 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ollama-hpa
+  name: api-hpa 
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ollama-deployment
+    name: api-deployment
   minReplicas: 1
-  maxReplicas: 1
+  maxReplicas: 2
   metrics:
-    - type: Resource
+    - type: Resource 
       resource:
         name: cpu
         target:

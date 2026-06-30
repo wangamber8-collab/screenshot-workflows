@@ -24,4 +24,8 @@ async def enqueue_vision(request: EnqueueRequest, x_webhook_secret: str = Header
         )
         return {"status": "queued"}
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 

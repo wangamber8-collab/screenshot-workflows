@@ -4,22 +4,27 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
-  
+
   ollama:
-    build:
-      context: .
-      dockerfile: docker/ollama.Dockerfile
-    ports: 
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
       - "11434:11434"
-    restart: unless-stopped
-    volunes:
+    volumes:
       - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+    restart: unless-stopped
+  
+  model-loader:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    entrypoint: sh -c "until ollama list > /dev/null 2>&1; do echo 'waiting for ollama...'; sleep 2; done && ollama pull qwen3-vl:4b && ollama pull nomic-embed-text"
+      
+    restart: "no"
   
   api:
     build:
@@ -38,8 +43,8 @@ services:
       context: .
       dockerfile: docker/vision.Dockerfile
     depends_on:
-      ollama:
-        condition: service_healthy
+      model-loader:
+        condition: service_completed_successfully
       redis:
         condition: service_started
     env_file:
@@ -53,8 +58,8 @@ services:
       context: .
       dockerfile: docker/embedding.Dockerfile
     depends_on:
-      ollama:
-        condition: service_healthy
+      model-loader:
+        condition: service_completed_successfully
       redis:
         condition: service_started
     env_file:
@@ -68,8 +73,8 @@ services:
       context: .
       dockerfile: docker/grouping.Dockerfile
     depends_on:
-      ollama:
-        condition: service_healthy
+      model-loader:
+        condition: service_completed_successfully
       redis:
         condition: service_started
     env_file:

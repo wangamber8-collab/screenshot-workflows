@@ -12,6 +12,19 @@ spec:
       labels:
         app: ollama
     spec:
+      initContainers:
+        - name: model-loader
+          image: ollama/ollama:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              ollama serve &
+              sleep 5
+              ollama pull qwen3-vl:4b
+              ollama pull nomic-embed-text
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /root/.ollama
       containers:
         - name: ollama-container
           image: ollama/ollama:latest
@@ -24,3 +37,10 @@ spec:
             limits:
               memory: "4Gi"
               cpu: "2000m"
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /root/.ollama
+      volumes:
+      - name: ollama-data
+        persistentVolumeClaim:
+          claimName: ollama-pvc
