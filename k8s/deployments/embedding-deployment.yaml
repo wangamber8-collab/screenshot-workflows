@@ -1,20 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vision-deployment
+  name: embedding-deployment
 spec:
   selector:
     matchLabels:
-      app: vision
+      app: embedding
   template:
     metadata:
       labels:
-        app: vision
+        app: embedding
     spec:
       containers:
-        - name: vision-container
-          image: vision-service:latest
+        - name: embedding-container
+          image: embedding-service:latest
           imagePullPolicy: IfNotPresent
+          command: ["celery", "-A", "services.celery_app", "worker", "--queues", "embedding", "--loglevel", "info", "--concurrency", "1"]
           resources:
             requests:
               memory: "512Mi"

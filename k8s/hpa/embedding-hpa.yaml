@@ -1,12 +1,12 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ollama-hpa
+  name: embedding-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ollama-deployment
+    name: embedding-deployment
   minReplicas: 1
   maxReplicas: 1
   metrics:

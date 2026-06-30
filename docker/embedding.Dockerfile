@@ -8,4 +8,4 @@ COPY db/ ./db/
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["celery", "-A", "services.celery_app", "worker", "--queues", "embedding", "--loglevel", "info"]
+CMD ["celery", "-A", "services.celery_app", "worker", "--queues", "embedding", "--loglevel", "info", "--concurrency", "1"]

@@ -1,20 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: embedding-deployment
+  name: grouping-deployment
 spec:
   selector:
     matchLabels:
-      app: embedding
+      app: grouping
   template:
     metadata:
       labels:
-        app: embedding
+        app: grouping
     spec:
       containers:
-        - name: embedding-container
-          image: embedding-service:latest
+        - name: grouping-container
+          image: grouping-service:latest
           imagePullPolicy: IfNotPresent
+          command: ["celery", "-A", "services.celery_app", "worker", "--queues", "grouping", "--loglevel", "info", "--concurrency", "1"]
           resources:
             requests:
               memory: "512Mi"
