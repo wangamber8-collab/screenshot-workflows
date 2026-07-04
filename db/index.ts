@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({error : insertError.message}), {status : 400})
   }
 
-  const res = await fetch("VALUE_HERE", { //fill in with deployed fastapi route or replace this if using different redis provider
+  const res = await fetch("VALUE_HERE", { //fill in with deployed fastapi route
     method: "POST",
     headers: {
       "Content-Type": "application/json",

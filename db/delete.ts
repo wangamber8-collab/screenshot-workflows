@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
   await supabase.from('screenshots').delete().eq('user_id', user_id)
   await supabase.from('workflow_sets').delete().eq('user_id', user_id)
-  //await supabase.from('input').delete().eq('user_id', user_id)  <-- assuming user id info for each screenshot is stored in a /separate table
+  //await supabase.from('input').delete().eq('user_id', user_id)  <-- assuming user id info for each screenshot is stored in a separate table
 
   return new Response(JSON.stringify({ success: true}), {status: 200})
 })
