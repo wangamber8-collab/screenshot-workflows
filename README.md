@@ -40,4 +40,28 @@ docker compose up --build
 ```
 
 The first run will download the Ollama models, which may take several minutes.
+
+### Running in Kubernetes
+
+> Note: Kubernetes configuration is included for multi-node deployments. Docker Compose is recommended for single-machine setups.
+
+Create the secret:
+
+```bash
+kubectl create secret generic app-secrets --from-env-file=.env
+```
+
+Build images:
+
+```bash
+docker build -f docker/vision.Dockerfile -t vision-service:latest .
+docker build -f docker/embedding.Dockerfile -t embedding-service:latest .
+docker build -f docker/grouping.Dockerfile -t grouping-service:latest .
+docker build -f docker/api.Dockerfile -t api-service:latest .
+```
+
+Apply all manifests:
+
+```bash
+kubectl apply -R -f k8s/
 ```
